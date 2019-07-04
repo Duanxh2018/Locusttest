@@ -12,22 +12,21 @@ from eth_keys import (
 )
 
 con_tx = {
-    "chainId": "3",
-    "fromChainId": "3",
-    "toChainId": "3",
+    "chainId": "2",
+    "fromChainId": "2",
+    "toChainId": "2",
     "from": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
-    "nonce": "4",
-    "to": "0xa561712AD5d1Ba59Ac1F962124b8b9d316cb544e",
-    "input": "",
-    "value": "3"
-    }
-
+    "nonce": "119",
+    "to": "",
+    "input": "0x6080604052348015600f57600080fd5b50609c8061001e6000396000f300608060405260043610603e5763ffffffff7c0100000000000000000000000000000000000000000000000000000000600035041663c6888fa181146043575b600080fd5b348015604e57600080fd5b506058600435606a565b60408051918252519081900360200190f35b600702905600a165627a7a72305820712e4ae66a90968bb61e7796ead5157115ae690239fdcca5b8eab28e0041085c0029",
+    "value": "0"
+}
 
 transaction_dict = con_tx
 
 
 def signTransaction(transaction_dict, private_key):
-    FULL_NODE_HOSTS = 'http://192.168.1.13:8091'
+    FULL_NODE_HOSTS = 'http://192.168.1.13:8089'
 
     provider = HTTPProvider (FULL_NODE_HOSTS)
     web3 = Web3 (provider)

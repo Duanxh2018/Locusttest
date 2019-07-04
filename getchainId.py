@@ -1,6 +1,6 @@
-maskBit = 4
+maskBit = 3
 # maskBit = 0
-listA = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+listA = [3,4,5,6,7,8,9,10]
 
 
 def GetchainId(fromaddress):
@@ -17,4 +17,4 @@ def GetchainId(fromaddress):
     print(chainId)
     return chainId
 
-GetchainId("0x22C73038A2571F02948585b13170A7B84d3b0f6B")
+GetchainId("0xD71C785aD93052CF28115F91f84214826D293658")

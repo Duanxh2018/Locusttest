@@ -1,10 +1,11 @@
 import requests
 import json
 
-maskBit = 4
+fromaddress = "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"
+maskBit = 3
 # maskBit = 0
 # listA = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
-listA = [20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35]
+listA = [3,4,5,6,7,8,9,10]
 
 def GetfromAddress():
     try:
@@ -32,10 +33,12 @@ def GetchainId(fromaddress):
     return chainId
 
 
-def GetAccount(fromaddresses):
-    for fromaddress in fromaddresses:
+def GetAccount(fromaddress):
+    # for fromaddress in fromaddresses:
+        s = requests.session ()
+        s.keep_alive = False
         chainId = GetchainId(fromaddress)
-        url = 'http://192.168.1.13:8093'
+        url = 'http://192.168.1.13:8091'
         headers = {'Content-Type': 'application/json'}
         data = {
             "method": "GetAccount",
@@ -49,4 +52,4 @@ def GetAccount(fromaddresses):
         nonceid = resp["nonce"]
         return nonceid
 
-GetAccount()
+GetAccount("0x2c7536e3605d9c16a7a3d7b1898e529396a65c23")

@@ -22,7 +22,7 @@ maskBit = 3
 listA = [3,4,5,6,7,8,9,10]
 
 def signTransaction(transaction_dict, private_key):
-    FULL_NODE_HOSTS = 'http://192.168.1.13:8093'
+    FULL_NODE_HOSTS = 'http://192.168.1.13:8089'
 
     provider = HTTPProvider (FULL_NODE_HOSTS)
     web3 = Web3 (provider)
@@ -98,7 +98,9 @@ def GetchainId(fromaddress):
     return chainId
 
 def GetAccount(chainId,fromaddress):
-    url = 'http://192.168.1.13:8091'
+    s = requests.session()
+    s.keep_alive = False
+    url = 'http://192.168.1.13:8089'
     headers = {'Content-Type': 'application/json'}
     data = {
         "method": "GetAccount",
@@ -128,7 +130,9 @@ class UserBehavior(TaskSet):
             toaddress = self.locust.toaddress_queue.get()
             print(u'当前转出地址：',fromaddress)
             print(u'当前转入地址：',toaddress)
-            url = 'http://172.26.65.237'
+            s = requests.session()
+            s.keep_alive = False
+            url = 'http://192.168.1.13:8089'
             headers = {'Content-Type': 'application/json'}
             con_tx = {
                 "chainId": str(chainId),
@@ -143,7 +147,7 @@ class UserBehavior(TaskSet):
             con_signtx = signTransaction(con_tx, b'\x15\xd1\x158\x1aND]f\xc5\x9fL+\x88Mx\xa3J\xc5K\xcc\xc33\xb4P\x8b\xce\x9c\xac\xf3%9')
             # print (con_signtx)
             data = {"method": "SendTx","params":con_signtx}
-            with self.client.post(url=url, headers=headers,data=json.dumps (data).encode (encoding='UTF8')) as response:
+            with self.client.post(url=url, headers=headers,data=json.dumps(data).encode(encoding='UTF8')) as response:
                 # 设置断言（1、状态码断言；2、返回结果断言）
                 if response.status_code != 200:
                     print (u"请求返回状态码:", response.status_code)
