@@ -14,3 +14,5 @@
 		分布式压测需设置master，然后slave机启动时需声明master机是哪台，master和slave为1对多的关系。具体参数可使用locust --help查看。
 
 5、浏览器打开:localhost:8089 设置并发数和每秒启动用户数 
+
+6、最终优化版本：Q5test.py
