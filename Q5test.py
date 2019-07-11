@@ -114,13 +114,10 @@ class UserBehavior(TaskSet):
         url = 'http://192.168.1.13:8089'
         headers = {'Content-Type': 'application/json'}
         for toaddress in toaddresses:
-            print(fromaddress)
-            print(toaddress)
-            print(nonceid)
             con_tx = {
-                "chainId": "2",
-                "fromChainId": "2",
-                "toChainId": "2",
+                "chainId": "1",
+                "fromChainId": "1",
+                "toChainId": "1",
                 "from": fromaddress,
                 "nonce": str(nonceid),
                 "to": toaddress,
@@ -140,7 +137,6 @@ class UserBehavior(TaskSet):
                     print(u'交易请求发送成功！')
                 else:
                     print(u'请求结果为空，请确认请求参数是否正确！')
-                    # print(respTx.content)
             # 每个账户每次执行请求后，nonce值加1，做循环请求
             nonceid = nonceid + 1
             print(time.time() - starttime)
@@ -151,9 +147,9 @@ class websitUser(HttpLocust):
     fromaddresses = GetfromAddress ()
     fromaddress_queue = queue.Queue ()
     for fromaddress in fromaddresses:
-        fromaddress_queue.put_nowait (fromaddress)
-    min_wait = 3000  # 单位毫秒
-    max_wait = 6000  # 单位毫秒
+        fromaddress_queue.put_nowait(fromaddress)
+    min_wait = 0  # 单位毫秒
+    max_wait = 1  # 单位毫秒
 
 # if __name__ == "__main__":
 #     import os

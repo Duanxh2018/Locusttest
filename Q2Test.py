@@ -145,7 +145,6 @@ class UserBehavior(TaskSet):
                 "value": "3"
             }
             con_signtx = signTransaction(con_tx, b'\x15\xd1\x158\x1aND]f\xc5\x9fL+\x88Mx\xa3J\xc5K\xcc\xc33\xb4P\x8b\xce\x9c\xac\xf3%9')
-            # print (con_signtx)
             data = {"method": "SendTx","params":con_signtx}
             with self.client.post(url=url, headers=headers,data=json.dumps(data).encode(encoding='UTF8')) as response:
                 # 设置断言（1、状态码断言；2、返回结果断言）
@@ -173,5 +172,5 @@ class websitUser(HttpLocust):
     for toaddress in toaddresses:
         toaddress_queue.put_nowait(toaddress)
 
-    min_wait = 10  # 单位毫秒
-    max_wait = 2000  # 单位毫秒
+    min_wait = 0  # 单位毫秒
+    max_wait = 1  # 单位毫秒

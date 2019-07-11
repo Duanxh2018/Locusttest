@@ -1,114 +1,154 @@
-#!/usr/bin/env python
-# coding:utf-8
+import queue
+from collections import Mapping
+
+from web3 import Web3, HTTPProvider
+# from locust import HttpLocust,TaskSequence,seq_task
+from locust import HttpLocust,TaskSet,task
 import json
+import time
+from web3._utils.encoding import (
+    remove_0x_prefix, to_bytes, to_hex
+)
+from eth_utils import keccak as eth_utils_keccak
 
-import paramiko
-# import urunite_test_py
-import unittest
-import numpy as np
-import matplotlib.pyplot as plt
-import pylab
-import matplotlib.dates as mdates
-import requests
-from numpy import datetime64
-from itertools import islice
-import re,os,time,shutil,logging
-import threading
-import datetime
+from eth_keys import (
+    keys
+)
 
 
-# chainId = "0"
-# fromaddress = "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"
-
-logging.basicConfig(level=logging.INFO,
-                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                datefmt='%a, %d %b %Y %H:%M:%S',
-                filename='parallel_test.log',
-                filemode='w')
-
-host1={"ip":"192.168.1.13",'port':22,"username":"root","passwd":"chrdwhdhxt"}
-host2={"ip":"192.1689.1.14",'port':22,"username":"root","passwd":"chrdwhdhxt"}
-#将host添加到HOST中进行监控
-HOST=[host1,host2]
-
-data_path=os.path.join(os.getcwd(),"data")
-pic_path=os.path.join(os.getcwd(),"picture")
+maskBit = 0
+# maskBit = 0
+# listA = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+listA = [2]
 
 
-#ssh，返回远程命令的输出结果。
-def ssh2(host,cmd):
-    result=[]
+f = open('./time.txt', 'w')
+
+def signTransaction(transaction_dict, private_key):
+    FULL_NODE_HOSTS = 'http://192.168.1.13:8089'
+
+    provider = HTTPProvider (FULL_NODE_HOSTS)
+    web3 = Web3 (provider)
+    if not isinstance(transaction_dict, Mapping):
+        raise TypeError("transaction_dict must be dict-like, got %r" % transaction_dict)
+    sign_str = transaction_dict["chainId"] + remove_0x_prefix(transaction_dict["from"].lower()) + \
+               remove_0x_prefix(transaction_dict["to"].lower()) + transaction_dict["nonce"] + \
+               transaction_dict["value"] + remove_0x_prefix(transaction_dict["input"].lower())
+    sign_bytes = to_bytes(text=sign_str)
+    res = eth_utils_keccak(sign_bytes)
+    sign_hash = web3.eth.account.signHash(to_hex(res), private_key=private_key)
+
+    transaction_dict["sig"] = to_hex(sign_hash.signature)
+    pk = keys.PrivateKey(private_key)
+    transaction_dict["pub"] = "0x04" + pk.public_key.to_hex()[2:]
+    return transaction_dict
+
+def GetfromAddress():
     try:
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        logging.info("connect to "+host['ip']+",user "+host['username']+",ssh")
-        ssh.connect(host['ip'],int(host['port']),host['username'],host['passwd'],timeout=5)
-        for m in cmd:
-            logging.info(m)
-            stdin,stdout,stderr = ssh.exec_command(m)
-            out = stdout.readlines()
-            #return out
-            for o in out:
-                logging.info(o)
-                result.append(o)
-        ssh.close()
-    except Exception as e:
-        logging.DEBUG(e)
-    return out
+        file = open("./fromaddress.txt", 'r', encoding='utf-8')
+    except IOError:
+        error = []
+        return error
+    fromaddresses = []
+    for line in file:
+        fromaddresses.append(line.strip())
+    file.close()
+    return fromaddresses
 
-#sftp,默认从对端home目录获取，放到本地当前目录
-def sftpfile(host,getfiles,putfiles):
+
+def GettoAddress():
     try:
-        logging.info("connnect to "+host['ip']+",user "+host['username']+",sftp")
-        t=paramiko.Transport((host['ip'],int(host['port'])))
-        t.connect(username=host['username'],password=host['passwd'])
-        sftp =paramiko.SFTPClient.from_transport(t)
-        if getfiles != None:
-            for file in getfiles:
-                logging.info("get "+file)
-                file=file.replace("\n", "")
-                sftp.get(file,file)
-        if putfiles != None:
-            for file in putfiles:
-                file=file.replace("\n", "")
-                logging.info("put "+file)
-                sftp.put(file,file)
-        t.close()
-    except:
-        import traceback
-        traceback.print_exc()
+        file = open("./toaddress.txt", 'r', encoding='utf-8')
+    except IOError:
+        error = []
+        return error
+    toaddresses = []
+    for line in file:
+        toaddresses.append (line.strip())
+    file.close()
+    return toaddresses
+
+def GetchainId(fromaddress):
+    addressbyte = bytes.fromhex (fromaddress[2:])
+    byteSize = (maskBit >> 3) +1
+    byteNum = addressbyte[0:byteSize]
+    idx = ord(byteNum)
+    mask = maskBit & 0x7
+    if mask == 0:
+        return idx
+    bits = 8 - mask
+    idx >>= bits
+    chainId = listA[idx]
+    return chainId
+
+
+
+class UserBehavior(TaskSet):
+    def GetAccount(self,chainId,fromaddress):
+        url = 'http://192.168.1.13:8089'
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "method": "GetAccount",
+            "params": {"chainId": chainId, "address": fromaddress}
+        }
+        response =  self.client.post(url=url, headers=headers, data=json.dumps (data).encode(encoding='UTF8'))
+        assert response.status_code
+        if 'error' in response:
+            return response['error']
+        resp = json.loads(response.content.decode())
+        nonceid = resp["nonce"]
+        return nonceid
+    @task(1)
+    def TestTransfer(self):
+        """转账交易"""
         try:
-            t.close()
-        except Exception as e:
-            logging.DEBUG(e)
-
-def GetAccount(chainId,fromaddress):
-            url = 'http://192.168.1.13:8091'
+            fromaddress = self.locust.fromaddress_queue.get() # 获取fromaddress队列里的数据，并赋值给fromaddress
+        except queue.Empty:  # 队列取空后，直接退出
+            print("no data exist")
+            exit(0)
+        chainId = 2
+        nonceid = self.GetAccount(str(chainId),fromaddress)
+        for i in range(10000):
+            starttime = time.time ()
+            toaddress = self.locust.toaddress_queue.get()
+            url = 'http://192.168.1.13:8089'
             headers = {'Content-Type': 'application/json'}
-            data = {
-                "method": "GetAccount",
-                "params": {"chainId": chainId, "address": fromaddress}
+            con_tx = {
+                "chainId": str(chainId),
+                "fromChainId": str(chainId),
+                "toChainId": "2",
+                "from": fromaddress,
+                "nonce": str(nonceid),
+                "to": toaddress,
+                "input": '',
+                "value": "3"
             }
-            response = requests.post (url=url, headers=headers, data=json.dumps (data).encode (encoding='UTF8'))
-            # print(response)
-            # time.sleep (5)
-            # if 'error' in response:
-            #     return response['error']
-            # resp = json.loads (response.content.decode ())
-            # print(resp)
-            # nonceid = resp["nonce"]
-            # print(nonceid)
-            return response.status_code
-            # self.assertEqual(response.status_code,200)
+            con_signtx = signTransaction(con_tx, b'\x15\xd1\x158\x1aND]f\xc5\x9fL+\x88Mx\xa3J\xc5K\xcc\xc33\xb4P\x8b\xce\x9c\xac\xf3%9')
+            data = {"method": "SendTx","params":con_signtx}
+            with self.client.post(url=url, headers=headers,data=json.dumps(data).encode(encoding='UTF8')) as response:
+                # 设置断言（1、状态码断言；2、返回结果断言）
+                if response.status_code != 200:
+                    print(u"请求返回状态码:", response.status_code)
+                elif response.status_code == 200:
+                    if 'TXhash' in json.loads (response.content.decode ()):
+                        print (u'交易请求发送成功！')
+                    else:
+                        print (u'请求结果为空，请确认请求参数是否正确！')
+                # 每个账户每次执行请求后，nonce值加1，做循环请求
+                nonceid = nonceid + 1
+            print(fromaddress,time.time()-starttime,file=f)
 
 
-
-class MyTestCase (unittest.TestCase):
-    # def test_something(self):
-    #     self.assertEqual (True, False)
-    def test_GetAccount(self):
-        self.assertEqual(GetAccount("0","0x2c7536e3605d9c16a7a3d7b1898e529396a65c23"),200)
-        self.assertEqual(GetAccount ("0", "0x2c7536e3605d9c16a7a3d7b1898e529396"), 200)
-
-if __name__ == '__main__':
-    unittest.main ()
+class websitUser(HttpLocust):
+    task_set = UserBehavior
+    #从文本中读取fromaddress地址，并加入队列
+    fromaddresses = GetfromAddress()
+    fromaddress_queue = queue.Queue()
+    for fromaddress in fromaddresses:
+        fromaddress_queue.put_nowait(fromaddress)
+    toaddresses = GettoAddress()
+    toaddress_queue = queue.Queue ()
+    for toaddress in toaddresses:
+        toaddress_queue.put_nowait(toaddress)
+    min_wait = 0  # 单位毫秒
+    max_wait = 1  # 单位毫秒

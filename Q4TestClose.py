@@ -15,8 +15,8 @@ from eth_keys import (
     keys
 )
 
-maskBit = 1
-listA = [3,4]
+maskBit = 0
+listA = [2]
 
 def signTransaction(transaction_dict, private_key):
     FULL_NODE_HOSTS = 'http://192.168.1.13:8089'
@@ -105,8 +105,6 @@ class UserBehavior(TaskSet):
         toaddresses = self.GettoAddress()
         try:
             fromaddress = self.locust.fromaddress_queue.get() # 获取fromaddress队列里的数据，并赋值给fromaddress
-            # print(fromaddress)
-            # fromaddress = fromaddress_queue.get()
         except queue.Empty:  # 队列取空后，直接退出
             print("no data exist")
             exit(0)
@@ -115,10 +113,7 @@ class UserBehavior(TaskSet):
         s = requests.session()
         s.keep_alive = False
         url = 'http://192.168.1.13:8089'
-        # path = ""
         headers = {'Content-Type': 'application/json'}
-        # self.client.headers.update(headers)
-        # print(self.client.headers)
         for toaddress in toaddresses:
             print(fromaddress)
             print(toaddress)
@@ -133,10 +128,9 @@ class UserBehavior(TaskSet):
                 "input": '',
                 "value": "3"
             }
-            con_signtx = signTransaction (con_tx,b'\x15\xd1\x158\x1aND]f\xc5\x9fL+\x88Mx\xa3J\xc5K\xcc\xc33\xb4P\x8b\xce\x9c\xac\xf3%9')
+            con_signtx = signTransaction(con_tx,b'\x15\xd1\x158\x1aND]f\xc5\x9fL+\x88Mx\xa3J\xc5K\xcc\xc33\xb4P\x8b\xce\x9c\xac\xf3%9')
             print (con_signtx)
             data = {"method": "SendTx", "params": con_signtx}
-            # respTx = self.client.post(path, data=data, verify=False)
             respTx = self.client.post(url=url, headers=headers,data=json.dumps(data).encode(encoding='UTF8'))
             if respTx.status_code != 200:
                 print(u"请求返回状态码:", respTx.status_code)
@@ -154,13 +148,13 @@ class UserBehavior(TaskSet):
 
 class websitUser(HttpLocust):
     task_set = UserBehavior
-    # host = "http://192.168.1.13:8089"
+    host = "http://192.168.1.13:8089"
     fromaddresses = GetfromAddress ()
     fromaddress_queue = queue.Queue ()
     for fromaddress in fromaddresses:
         fromaddress_queue.put_nowait (fromaddress)
-    min_wait = 3000  # 单位毫秒
-    max_wait = 6000  # 单位毫秒
+    min_wait = 0  # 单位毫秒
+    max_wait = 1  # 单位毫秒
 
 # if __name__ == "__main__":
 #     import os

@@ -192,5 +192,5 @@ class websitUser(HttpLocust):
     # for toaddress in toaddresses:
     #     toaddress_queue.put_nowait(toaddress)
 
-    min_wait = 10  # 单位毫秒
-    max_wait = 2000  # 单位毫秒
+    min_wait = 0  # 单位毫秒
+    max_wait = 1  # 单位毫秒

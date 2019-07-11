@@ -103,7 +103,7 @@ def GetchainId(fromaddress):
     return chainId
 
 def GetAccount(chainId,fromaddress):
-    url = 'http://172.26.65.237'
+    url = 'http://192.168.1.13:8089'
     headers = {'Content-Type': 'application/json'}
     data = {
         "method": "GetAccount",
@@ -134,7 +134,7 @@ class UserBehavior(TaskSet):
         for toaddress in toaddresses:
             print(u'当前转出地址：',fromaddress)
             print(u'当前转入地址：',toaddress)
-            url = 'http://192.168.1.13:8093'
+            url = 'http://192.168.1.13:8089'
             headers = {'Content-Type': 'application/json'}
             con_tx = {
                 "chainId": str(chainId),
@@ -182,5 +182,5 @@ class websitUser(HttpLocust):
     for toaddress in toaddresses:
         toaddress_queue.put_nowait(toaddress)
 
-    min_wait = 10  # 单位毫秒
-    max_wait = 2000  # 单位毫秒
+    min_wait = 0     # 单位毫秒
+    max_wait = 1     # 单位毫秒

@@ -16,10 +16,13 @@ from eth_keys import (
 )
 import requests
 
-maskBit = 3
+maskBit = 1
 # maskBit = 0
 # listA = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
-listA = [3,4,5,6,7,8,9,10]
+listA = [3,4]
+
+
+f = open('./time.txt', 'w')
 
 def signTransaction(transaction_dict, private_key):
     FULL_NODE_HOSTS = 'http://192.168.1.13:8089'
@@ -36,8 +39,9 @@ def signTransaction(transaction_dict, private_key):
     sign_hash = web3.eth.account.signHash(to_hex(res), private_key=private_key)
 
     transaction_dict["sig"] = to_hex(sign_hash.signature)
-    pk = keys.PrivateKey(private_key)
-    transaction_dict["pub"] = "0x04" + pk.public_key.to_hex()[2:]
+    # pk = keys.PrivateKey(private_key)
+    # transaction_dict["pub"] = "0x04" + pk.public_key.to_hex()[2:]
+    transaction_dict["pub"] = "0x043d85aa2a649fa5fd421988cebff58d7173f7b563b8a9594e92bcf3e9f5e43037c3463121af51aacc8a8cf2d8cfcc6fa717b774fc0aceec04d7185c87e279c1f6"
     return transaction_dict
 # def get_privatekey():
 #     FULL_NODE_HOSTS = 'http://192.168.1.126:8089'
@@ -98,8 +102,6 @@ def GetchainId(fromaddress):
     return chainId
 
 def GetAccount(chainId,fromaddress):
-    s = requests.session()
-    s.keep_alive = False
     url = 'http://192.168.1.13:8089'
     headers = {'Content-Type': 'application/json'}
     data = {
@@ -118,20 +120,16 @@ class UserBehavior(TaskSet):
     @task(1)
     def TestTransfer(self):
         """转账交易"""
-        toaddresses  = GettoAddress()
-        starttime = time.time()
         try:
             fromaddress = self.locust.fromaddress_queue.get() # 获取fromaddress队列里的数据，并赋值给fromaddress
         except queue.Empty:  # 队列取空后，直接退出
             print("no data exist")
             exit(0)
-        chainId = GetchainId(fromaddress)
+        chainId = 2
         nonceid = GetAccount(str(chainId),fromaddress)
-        for toaddress in toaddresses:
-        # for i in range(10000):
-        #     toaddress = self.locust.toaddress_queue.get()
-            print(u'当前转出地址：',fromaddress)
-            print(u'当前转入地址：',toaddress)
+        for i in range(10000):
+            starttime = time.time()
+            toaddress = self.locust.toaddress_queue.get()
             s = requests.session()
             s.keep_alive = False
             url = 'http://192.168.1.13:8089'
@@ -147,20 +145,21 @@ class UserBehavior(TaskSet):
                 "value": "3"
             }
             con_signtx = signTransaction(con_tx, b'\x15\xd1\x158\x1aND]f\xc5\x9fL+\x88Mx\xa3J\xc5K\xcc\xc33\xb4P\x8b\xce\x9c\xac\xf3%9')
-            # print (con_signtx)
             data = {"method": "SendTx","params":con_signtx}
-            with self.client.post(url=url, headers=headers,data=json.dumps(data).encode(encoding='UTF8')) as response:
-                # 设置断言（1、状态码断言；2、返回结果断言）
-                if response.status_code != 200:
-                    print (u"请求返回状态码:", response.status_code)
-                elif response.status_code == 200:
-                    if 'TXhash' in json.loads (response.content.decode ()):
-                        print (u'交易请求发送成功！')
-                    else:
-                        print (u'请求结果为空，请确认请求参数是否正确！')
-                # 每个账户每次执行请求后，nonce值加1，做循环请求
-                nonceid = nonceid + 1
-                print(time.time()-starttime)
+
+            self.client.post(url=url, headers=headers, data=json.dumps(data).encode(encoding='UTF8'))
+            # with self.client.post(url=url, headers=headers,data=json.dumps(data).encode(encoding='UTF8')) as response:
+            #     # 设置断言（1、状态码断言；2、返回结果断言）
+            #     if response.status_code != 200:
+            #         print (u"请求返回状态码:", response.status_code)
+            #     elif response.status_code == 200:
+            #         if 'TXhash' in json.loads (response.content.decode ()):
+            #             print (u'交易请求发送成功！')
+            #         else:
+            #             print (u'请求结果为空，请确认请求参数是否正确！')
+            #     # 每个账户每次执行请求后，nonce值加1，做循环请求
+            nonceid = nonceid + 1
+            print(fromaddress,time.time()-starttime,file=f)
 
 
 class websitUser(HttpLocust):
@@ -170,9 +169,9 @@ class websitUser(HttpLocust):
     fromaddress_queue = queue.Queue()
     for fromaddress in fromaddresses:
         fromaddress_queue.put_nowait(fromaddress)
-    # toaddresses = GettoAddress()
-    # toaddress_queue = queue.Queue ()
-    # for toaddress in toaddresses:
-    #     toaddress_queue.put_nowait(toaddress)
-    min_wait = 10  # 单位毫秒
-    max_wait = 2000  # 单位毫秒
+    toaddresses = GettoAddress()
+    toaddress_queue = queue.Queue ()
+    for toaddress in toaddresses:
+        toaddress_queue.put_nowait(toaddress)
+    min_wait = 0  # 单位毫秒
+    max_wait = 1  # 单位毫秒
